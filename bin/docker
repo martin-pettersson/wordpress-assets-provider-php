@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+#
+# Run given command(s) in the project's build container.
+
+set -e
+
+HELP_MESSAGE="Usage: $(basename "${0}") command [arguments ...]"
+
+if [ -z "${1}" ]
+then
+	echo "${HELP_MESSAGE}" >&2
+
+	exit 1
+fi
+
+case "${1}" in
+	"--help" | "-h")
+		echo "${HELP_MESSAGE}"
+
+		exit
+		;;
+esac
+
+docker run \
+	--rm \
+	--interactive \
+	--tty \
+	--volume "$(pwd):/opt/src" \
+	--workdir /opt/src \
+	"$(docker build --quiet --file Dockerfile .)" "${@}"

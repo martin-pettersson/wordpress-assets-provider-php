@@ -1,0 +1,8 @@
+parameters:
+    phpVersion: 80300
+    level: 8
+    paths:
+        - src
+    ignoreErrors:
+        - identifier: missingType.iterableValue
+        - '#Function add_action not found.#'
