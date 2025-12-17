@@ -72,8 +72,14 @@ final class AssetsProvider implements ServiceProviderInterface
             $rootUrlAggregate->getRootUrl() . $configuration->get('assets.url', '/assets')
         );
 
-        $scripts = $configuration->get('assets.scripts', []);
-        $styles = $configuration->get('assets.styles', []);
+        $scripts = array_map(
+            fn($script) => [...$script, 'type' => 'script'],
+            $configuration->get('assets.scripts', [])
+        );
+        $styles = array_map(
+            fn($style) => [...$style, 'type' => 'style'],
+            $configuration->get('assets.styles', [])
+        );
 
         foreach ([...$scripts, ...$styles] as $asset) {
             $this->register($asset);
