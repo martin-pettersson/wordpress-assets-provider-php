@@ -18,9 +18,11 @@ use N7e\RootDirectoryAggregateInterface;
 use N7e\RootUrlAggregateInterface;
 use N7e\ServiceProviderInterface;
 use N7e\WordPress\Assets\AssetRegistry;
+use N7e\WordPress\Assets\AssetRegistryInterface;
 use N7e\WordPress\Assets\Script;
 use N7e\WordPress\Assets\Style;
 use Override;
+use RuntimeException;
 
 /**
  * Provides WordPress assets.
@@ -30,9 +32,9 @@ final class AssetsProvider implements ServiceProviderInterface
     /**
      * Registered assets.
      *
-     * @var \N7e\WordPress\Assets\AssetRegistry
+     * @var \N7e\WordPress\Assets\AssetRegistryInterface|null
      */
-    private AssetRegistry $assets;
+    private ?AssetRegistryInterface $assets = null;
 
     /**
      * Root directory aggregate.
@@ -44,8 +46,19 @@ final class AssetsProvider implements ServiceProviderInterface
     #[Override]
     public function configure(ContainerBuilderInterface $containerBuilder): void
     {
-        $container = $containerBuilder->build();
+        $containerBuilder->addFactory(AssetRegistryInterface::class, function () {
+            if (is_null($this->assets)) {
+                throw new RuntimeException('Cannot use asset registry before assets provider\'s load phase');
+            }
 
+            return $this->assets;
+        })
+            ->singleton();
+    }
+
+    #[Override]
+    public function load(ContainerInterface $container): void
+    {
         /** @var \N7e\Configuration\ConfigurationInterface $configuration */
         $configuration = $container->get(ConfigurationInterface::class);
 
@@ -55,20 +68,14 @@ final class AssetsProvider implements ServiceProviderInterface
         $rootUrlAggregate = $container->get(RootUrlAggregateInterface::class);
 
         $this->assets = new AssetRegistry(
-            $this->rootDirectoryAggregate->getRootDirectory() . $configuration->get('assetDirectory', '/assets'),
-            $rootUrlAggregate->getRootUrl() . $configuration->get('assetUrl', '/assets')
+            $this->rootDirectoryAggregate->getRootDirectory() . $configuration->get('assets.directory', '/assets'),
+            $rootUrlAggregate->getRootUrl() . $configuration->get('assets.url', '/assets')
         );
 
-        $containerBuilder->addFactory(AssetRegistry::class, fn() => $this->assets)->singleton();
-    }
+        $scripts = $configuration->get('assets.scripts', []);
+        $styles = $configuration->get('assets.styles', []);
 
-    #[Override]
-    public function load(ContainerInterface $container): void
-    {
-        /** @var \N7e\Configuration\ConfigurationInterface $configuration */
-        $configuration = $container->get(ConfigurationInterface::class);
-
-        foreach ($configuration->get('assets', []) as $asset) {
+        foreach ([...$scripts, ...$styles] as $asset) {
             $this->register($asset);
         }
 

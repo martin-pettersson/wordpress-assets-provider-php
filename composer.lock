@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2c07f5e652446a4790e155869aede855",
+    "content-hash": "45242d84714a8c96a52a1538fc385bc5",
     "packages": [
         {
             "name": "n7e/configuration",
@@ -237,16 +237,16 @@
         },
         {
             "name": "n7e/wordpress-assets",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/martin-pettersson/wordpress-assets-php.git",
-                "reference": "73ff072bb0898fa940c8e6e262008e80f8739c85"
+                "reference": "0653cfb12d20fc0effa60cc6d038ae76b5f2ccbe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/martin-pettersson/wordpress-assets-php/zipball/73ff072bb0898fa940c8e6e262008e80f8739c85",
-                "reference": "73ff072bb0898fa940c8e6e262008e80f8739c85",
+                "url": "https://api.github.com/repos/martin-pettersson/wordpress-assets-php/zipball/0653cfb12d20fc0effa60cc6d038ae76b5f2ccbe",
+                "reference": "0653cfb12d20fc0effa60cc6d038ae76b5f2ccbe",
                 "shasum": ""
             },
             "require": {
@@ -281,9 +281,9 @@
             "description": "A WordPress assets abstraction.",
             "support": {
                 "issues": "https://github.com/martin-pettersson/wordpress-assets-php/issues",
-                "source": "https://github.com/martin-pettersson/wordpress-assets-php/tree/0.3.0"
+                "source": "https://github.com/martin-pettersson/wordpress-assets-php/tree/0.4.0"
             },
-            "time": "2025-03-24T12:19:02+00:00"
+            "time": "2025-12-17T14:22:26+00:00"
         },
         {
             "name": "psr/container",

@@ -14,15 +14,17 @@ namespace N7e\WordPress;
 use N7e\Configuration\ConfigurationInterface;
 use N7e\DependencyInjection\ContainerBuilderInterface;
 use N7e\DependencyInjection\ContainerInterface;
+use N7e\DependencyInjection\DependencyDefinitionInterface;
 use N7e\RootDirectoryAggregateInterface;
 use N7e\RootUrlAggregateInterface;
-use N7e\WordPress\Assets\AssetRegistry;
+use N7e\WordPress\Assets\AssetRegistryInterface;
 use phpmock\phpunit\PHPMock;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 #[CoversClass(AssetsProvider::class)]
 #[CoversClass(InvalidAssetDefinitionException::class)]
@@ -62,25 +64,70 @@ class AssetsProviderTest extends TestCase
     }
 
     #[Test]
-    public function shouldRegisterAssetRegistry(): void
+    public function shouldRegisterNecessaryAssetComponents(): void
     {
-        $this->rootDirectoryAggregateMock->expects($this->once())->method('getRootDirectory');
-        $this->rootUrlAggregateMock->expects($this->once())->method('getRootUrl');
         $this->containerBuilderMock
             ->expects($this->once())
             ->method('addFactory')
-            ->with(AssetRegistry::class, $this->isCallable());
+            ->with(AssetRegistryInterface::class, $this->isCallable());
 
         $this->provider->configure($this->containerBuilderMock);
+    }
+
+    #[Test]
+    public function shouldThrowExceptionIfAccessingCertainComponentBeforeLoadPhase(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        $assetRegistryFactory = null;
+
+        $this->containerBuilderMock
+            ->method('addFactory')
+            ->willReturnCallback(function ($identifier, $factory) use (&$assetRegistryFactory) {
+                $assetRegistryFactory = $factory;
+
+                return $this->getMockBuilder(DependencyDefinitionInterface::class)->getMock();
+            });
+
+        $this->provider->configure($this->containerBuilderMock);
+
+        $assetRegistryFactory();
+    }
+
+    #[Test]
+    public function shouldNotThrowExceptionIfAccessingCertainComponentAfterLoadPhase(): void
+    {
+        $assetRegistryFactory = null;
+
+        $this->configurationMock
+            ->expects($this->exactly(4))
+            ->method('get')
+            ->willReturnOnConsecutiveCalls('', '', [], []);
+        $this->getFunctionMock(__NAMESPACE__, 'add_action')
+            ->expects($this->once())
+            ->with('wp_enqueue_scripts', $this->isCallable())
+            ->willReturnCallback(static fn($hook, $callback) => $callback());
+        $this->containerBuilderMock
+            ->method('addFactory')
+            ->willReturnCallback(function ($identifier, $factory) use (&$assetRegistryFactory) {
+                $assetRegistryFactory = $factory;
+
+                return $this->getMockBuilder(DependencyDefinitionInterface::class)->getMock();
+            });
+
+        $this->provider->configure($this->containerBuilderMock);
+        $this->provider->load($this->containerMock);
+
+        $this->assertInstanceOf(AssetRegistryInterface::class, $assetRegistryFactory());
     }
 
     #[Test]
     public function shouldNotRegisterAnyAssetsIfConfigurationIsEmpty(): void
     {
         $this->configurationMock
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(4))
             ->method('get')
-            ->willReturnOnConsecutiveCalls('', '', []);
+            ->willReturnOnConsecutiveCalls('', '', [], []);
         $this->getFunctionMock(__NAMESPACE__, 'add_action')
             ->expects($this->once())
             ->with('wp_enqueue_scripts', $this->isCallable())
@@ -96,9 +143,9 @@ class AssetsProviderTest extends TestCase
         $this->expectException(InvalidAssetDefinitionException::class);
 
         $this->configurationMock
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(4))
             ->method('get')
-            ->willReturnOnConsecutiveCalls('', '', [[]]);
+            ->willReturnOnConsecutiveCalls('', '', [[]], []);
 
         $this->provider->configure($this->containerBuilderMock);
         $this->provider->load($this->containerMock);
@@ -111,11 +158,12 @@ class AssetsProviderTest extends TestCase
         $name = 'name';
 
         $this->configurationMock
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(4))
             ->method('get')
             ->willReturnOnConsecutiveCalls(
                 '',
                 '',
+                [],
                 [
                     [
                         'type' => 'style',
@@ -144,7 +192,7 @@ class AssetsProviderTest extends TestCase
         $name = 'name';
 
         $this->configurationMock
-            ->expects($this->exactly(3))
+            ->expects($this->exactly(4))
             ->method('get')
             ->willReturnOnConsecutiveCalls(
                 '',
@@ -165,7 +213,8 @@ class AssetsProviderTest extends TestCase
                             ]
                         ]
                     ]
-                ]
+                ],
+                []
             );
         $this->getFunctionMock(__NAMESPACE__ . '\\Assets', 'wp_register_script')
             ->expects($this->once())
