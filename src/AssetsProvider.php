@@ -67,17 +67,20 @@ final class AssetsProvider implements ServiceProviderInterface
         /** @var \N7e\RootUrlAggregateInterface $rootUrlAggregate */
         $rootUrlAggregate = $container->get(RootUrlAggregateInterface::class);
 
-        $this->assets = new AssetRegistry(
-            $this->rootDirectoryAggregate->getRootDirectory() . $configuration->get('assets.directory', '/assets'),
-            $rootUrlAggregate->getRootUrl() . $configuration->get('assets.url', '/assets')
+        $rootDirectory = $this->rootDirectoryAggregate->getRootDirectory() . '/' . ltrim(
+            $configuration->get('assets.directory', '/assets'),
+            '/'
         );
+        $rootUrl = $rootUrlAggregate->getRootUrl() . '/' . ltrim($configuration->get('assets.url', '/assets'), '/');
+
+        $this->assets = new AssetRegistry($rootDirectory, $rootUrl);
 
         $scripts = array_map(
-            fn($script) => [...$script, 'type' => 'script'],
+            static fn($script) => [...$script, 'type' => 'script'],
             $configuration->get('assets.scripts', [])
         );
         $styles = array_map(
-            fn($style) => [...$style, 'type' => 'style'],
+            static fn($style) => [...$style, 'type' => 'style'],
             $configuration->get('assets.styles', [])
         );
 
@@ -118,6 +121,7 @@ final class AssetsProvider implements ServiceProviderInterface
      */
     private function registerStyle(array $styleDefinition): Style
     {
+        // @phpstan-ignore method.nonObject
         $style = $this->assets->registerStyle($styleDefinition['handle'], $styleDefinition['name']);
 
         if (array_key_exists('mediaType', $styleDefinition)) {
@@ -135,6 +139,7 @@ final class AssetsProvider implements ServiceProviderInterface
      */
     private function registerScript(array $scriptDefinition): Script
     {
+        // @phpstan-ignore method.nonObject
         $script = $this->assets->registerScript($scriptDefinition['handle'], $scriptDefinition['name']);
 
         if (array_key_exists('targetLocation', $scriptDefinition)) {
